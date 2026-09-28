@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Preview</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #10151c; color: #e6ebf1; font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  main { box-sizing: border-box; height: 100%; padding: 18px 20px; border: 1px solid #2a3542; display: flex; flex-direction: column; gap: 8px; }
+  h1 { margin: 0; font-size: 18px; }
+  .tag { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: #243142; color: #9fb3c8; font-size: 12px; }
+  p { margin: 0; color: #9fb3c8; }
+  code { color: #e9c46a; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Player</h1>
+  <span class="tag" id="mode"></span>
+  <p>This is <code>pages/preview.html</code> from the example app. Put your own preview here: the page receives <code>playerId</code> and <code>mode</code> in the address.</p>
+</main>
+<script>
+  const q = new URLSearchParams(location.search);
+  document.getElementById("title").textContent = q.get("playerId") ? `Player ${q.get("playerId")}` : "Player ID not shown in the game";
+  document.getElementById("mode").textContent = q.get("mode") === "pinned" ? "pinned (click elsewhere in the game or Esc to close)" : "hover (move the mouse away to close)";
+</script>
+</body>
+</html>

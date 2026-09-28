@@ -1,0 +1,411 @@
+﻿============================================================================================
+FM ACTIONLINK
+============================================================================================
+
+Coloca botões seus no perfil do jogador do Football Manager 26 e liga esses botões ao
+seu programa (site, app, visualizador 3D).
+
+[Imagem/Image: docs/exemplo.webp]
+
+Exemplo do que dá para fazer: três botões logo depois de "Acções" (aqui com um visual
+próprio; por padrão eles copiam o visual do jogo) e um estádio 3D dentro da coluna Físicos,
+mostrado por um app de fora do jogo.
+
+English guide: README.txt
+
+Para programadores e para usar com IA: INTEGRATION.md (guia técnico completo, em inglês).
+
+QUEM PRECISA DE QUÊ
+-------------------
+
+  - Você é...: Jogador: só quer usar os botões que alguém montou
+  - Precisa ter: O FM26 com BepInEx 6 e a pasta do plugin. Se o criador disser, o app dele instalado.
+  - NÃO precisa: Python, programar ou editar arquivos
+
+  - Você é...: Criador sem app: quer botões que abrem sites ou programas
+  - Precisa ter: O acima e o Bloco de Notas, para editar um arquivo
+  - NÃO precisa: Python ou programar
+
+  - Você é...: Criador com app: quer que os botões mandem coisas para o próprio app
+  - Precisa ter: O acima e um app que receba avisos pela rede local (qualquer linguagem)
+  - NÃO precisa: Python, a não ser que o seu app seja em Python
+
+Sobre o Python: ele só serve para rodar o app de exemplo que vem na pasta examples,
+feito para criadores estudarem. O jogador final nunca precisa de Python.
+
+PARTE 1: INSTALAR (PARA TODOS)
+------------------------------
+
+1. BepInEx 6. Se você já usa outros plugins no FM26, já tem. Se não tem, instale o
+   BepInEx 6 para IL2CPP (versão be.755 ou mais nova) e abra o jogo uma vez.
+2. Copie a pasta FMActionLink (que está dentro da pasta plugins do zip) para dentro de
+   BepInEx\plugins do seu jogo. Exemplos de onde fica:
+   - Steam: ...\steamapps\common\Football Manager 26\BepInEx\plugins
+   - Epic: ...\Epic Games\<pasta do FM26>\BepInEx\plugins
+   - Xbox / Game Pass: ...\XboxGames\Football Manager 26\Content\BepInEx\plugins
+3. Deixe o jogo em janela ou em tela cheia sem bordas. Na tela cheia "exclusiva", as
+   janelas do app não conseguem aparecer por cima do jogo.
+4. Ligue a opção de IDs do jogo. Nas preferências do FM, marque "Show screen IDs in Title
+   Bar to assist skinning" (mostrar os IDs das telas na barra de título). É por ela que o plugin
+   sabe qual jogador está aberto. Com a opção desligada, os botões só funcionam para jogadores
+   que têm foto.
+5. Abra o perfil de qualquer jogador. Os botões aparecem logo depois de "Acções".
+
+Se nada aparecer, veja a Parte 6.
+
+PARTE 2: RECEITAS (PARA CRIADORES)
+----------------------------------
+
+Tudo se monta no arquivo FMActionLink.json, dentro da pasta do plugin.
+
+- Abra com o Bloco de Notas (botão direito > Abrir com > Bloco de Notas).
+- Cada botão é um bloco entre { e } dentro da lista "buttons". Entre um bloco e outro
+  vai uma vírgula.
+- Salve e olhe o jogo: em até 2 segundos ele atualiza, sem reiniciar. Se você errar
+  alguma vírgula ou aspas, o jogo mantém a versão anterior e o log diz onde está o erro.
+- Onde aparecer {playerId}, o plugin põe o ID do jogador que está na tela.
+
+>> Receita 1: botão que abre um site
+
+Não precisa de app. No FMActionLink.json, dentro de "buttons", cole:
+
+    {
+      "id": "meu-site",
+      "label": "Meu site",
+      "action": { "type": "openUrl", "url": "https://meusite.com/jogador/{playerId}" }
+    }
+
+1. Troque "Meu site" pelo texto do botão.
+2. Troque o endereço pelo do seu site. Mantenha {playerId} onde o ID deve entrar.
+3. Salve. Clique no botão no jogo: o navegador abre na página daquele jogador.
+
+>> Receita 2: botão que abre um programa
+
+Não precisa de app. Cole:
+
+    {
+      "id": "meu-programa",
+      "label": "Abrir programa",
+      "action": { "type": "runProgram", "path": "C:\\Program Files\\MeuPrograma\\MeuPrograma.exe", "arguments": "--jogador {playerId}" }
+    }
+
+1. Em path, o caminho completo do .exe. Atenção: no arquivo, cada \ do caminho
+   se escreve duas vezes (\\).
+2. Em arguments, o que o programa deve receber (pode ficar "").
+3. Salve e teste.
+
+>> Receita 3: botão que abre o jogador no SEU app
+
+Aqui o botão não abre nada sozinho: ele avisa o seu app, que decide o que fazer.
+
+No FMActionLink.json:
+
+1. No topo, em "app", deixe o endereço onde o seu app vai escutar:
+    "app": { "eventsUrl": "http://127.0.0.1:8767/fm-events" }
+   Pode ser outra porta (o número depois de 127.0.0.1:), desde que seja a mesma do app.
+2. Em "buttons", cole:
+    { "id": "abrir-no-app", "label": "Abrir no app", "action": { "type": "sendToApp" } }
+3. Opcional: para o jogo abrir o seu app quando ele estiver fechado, preencha em "app"
+   o caminho do .exe: "startIfClosed": "C:\\Program Files\\MeuApp\\MeuApp.exe".
+
+No seu app: ele precisa fazer 3 coisas.
+
+1. Escutar o endereço de eventsUrl, aceitando pedidos POST.
+2. Ler o aviso. Cada clique chega assim:
+    {"event":"button.click","buttonId":"abrir-no-app","playerId":29179241,"screen":"playerProfile","gamePid":4876}
+   buttonId diz qual botão foi clicado; playerId, qual jogador.
+3. Responder na hora (qualquer resposta de sucesso, como 200 ou 204) e só depois
+   mostrar o jogador. O plugin já dá ao seu app permissão para vir para a frente do jogo:
+   use a função normal de "trazer a janela para a frente".
+
+Exemplo mínimo em Python (em outra linguagem é igual: um servidor web local que recebe JSON):
+
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import json
+    
+    class Avisos(BaseHTTPRequestHandler):
+        def do_POST(self):
+            aviso = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            self.send_response(204)            # responde logo
+            self.end_headers()
+            if aviso["event"] == "button.click" and aviso["buttonId"] == "abrir-no-app":
+                print("abrir o jogador", aviso.get("playerId"))   # troque pela sua função
+    
+    HTTPServer(("127.0.0.1", 8767), Avisos).serve_forever()
+
+>> Receita 4: janela que aparece ao passar o mouse (hover)
+
+O plugin desenha o botão; a janela é do seu app. Funciona assim:
+
+- A pessoa para o mouse no botão: o seu app recebe window.open e mostra a janela.
+- A pessoa tira o mouse: recebe window.close e fecha.
+- A pessoa clica no botão: recebe window.pin e a janela fica fixa até um clique fora,
+  Esc ou um segundo clique no botão (aí chega window.close).
+
+No FMActionLink.json (use a Receita 3, passo 1, para o endereço do app):
+
+    {
+      "id": "previa",
+      "icon": "icons/radar.png",
+      "tooltip": "Prévia do jogador",
+      "action": { "type": "window", "openOnHover": true, "hoverDelayMs": 250 }
+    }
+
+hoverDelayMs é quanto tempo o mouse precisa ficar parado antes de abrir (250 = 1/4 de
+segundo). Sem label, o botão vira um ícone quadrado.
+
+No seu app, ao receber window.open:
+
+    {"event":"window.open","buttonId":"previa","playerId":29179241,"mode":"hover",
+     "anchor":{"x":1180,"y":262,"width":38,"height":38},"gamePid":4876}
+
+1. Crie uma janela sem borda, sempre por cima e que não pegue o foco.
+2. Ponha a janela perto do botão: anchor é onde o botão está na tela (em pixels). Por
+   exemplo, logo abaixo: x = anchor.x, y = anchor.y + anchor.height + 6.
+3. Mostre nela a prévia do jogador playerId.
+4. Ao receber window.close com o mesmo buttonId, feche a janela.
+
+As regras da Parte 3 evitam os problemas mais comuns (janela no lugar errado, jogo
+parando de responder ao mouse). O app de exemplo já faz tudo isso: as funções
+show_overlay, hide_overlay e next_to do examples\python-app\app.py.
+
+>> Receita 5: prévia 3D ao clicar
+
+É a Receita 4 com "openOnHover": false: a janela só abre com o clique e fica até ser
+fechada.
+
+    {
+      "id": "previa-3d",
+      "icon": "icons/cube.png",
+      "tooltip": "Ver em 3D",
+      "action": { "type": "window", "openOnHover": false }
+    }
+
+No seu app, a janela mostra uma página com o modelo 3D. O jeito mais simples é o
+<model-viewer> com um arquivo GLB (o formato 3D mais prático para isso):
+
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+    <model-viewer src="meu-modelo.glb" camera-controls auto-rotate style="width:100vw;height:100vh"></model-viewer>
+
+O app de exemplo tem essa página pronta: examples\python-app\pages\model3d.html.
+
+>> Receita 6: 3D (ou outra coisa) embutido na própria tela
+
+O plugin abre um espaço vazio dentro do perfil e avisa, o tempo todo, onde esse espaço
+está. O seu app cola uma janela exatamente em cima dele, e parece que faz parte do jogo
+(é o estádio da imagem do topo).
+
+No FMActionLink.json, na lista "embeddedPanels":
+
+    {
+      "id": "meu-3d",
+      "afterLabel": ["Físicos", "Physical"],
+      "beforeLabel": ["Guarda-Redes", "Goleiro", "Goalkeeping", "Goalkeeper"],
+      "minHeight": 110
+    }
+
+- O espaço fica abaixo do texto de afterLabel e acima do texto de beforeLabel.
+  Os dois textos precisam estar na mesma coluna, um em cima do outro.
+- Escreva o texto exatamente como aparece no jogo, em cada idioma que você quiser atender.
+- O lugar acima (coluna Físicos, antes de Guarda-Redes) é só uma sugestão para teste:
+  ele só existe para jogadores de linha.
+- O espaço usa só a sobra da coluna: nunca aperta o conteúdo do jogo. Se sobrar menos
+  que minHeight, ele não aparece.
+
+No seu app:
+
+1. Ao receber panel.show, ponha a sua janela (sem borda, por cima, sem pegar o foco)
+   exatamente em rect:
+    {"event":"panel.show","panelId":"meu-3d","playerId":29179241,
+     "rect":{"x":1283,"y":820,"width":342,"height":141},"gamePid":4876}
+   Esse aviso se repete quando o espaço muda de lugar ou de tamanho, quando o jogador muda e
+   a cada 2 segundos. Se rect for igual ao anterior, não faça nada.
+2. Ao receber panel.hide (a pessoa trocou de aba ou de tela), esconda a janela sem
+   fechar. Assim o 3D não precisa carregar de novo quando ela voltar.
+
+>> Receita 7: ajustes rápidos
+
+- Trocar o ícone: ponha um PNG na pasta icons e use "icon": "icons/seu-icone.png".
+  O ideal é 64x64 pixels, desenho branco com fundo transparente.
+- Atalho de teclado: acrescente ao botão "hotkey": "ctrl+shift+o". Funciona com o
+  perfil aberto, fora de campos de texto.
+- Desligar um botão sem apagar: acrescente "enabled": false.
+- Texto ao passar o mouse: "tooltip": "...".
+- Mudar a ordem: os botões aparecem na ordem da lista.
+
+PARTE 3: AS 5 REGRAS DAS JANELAS DO SEU APP
+-------------------------------------------
+
+São as regras que fazem a janela parecer parte do jogo. O app de exemplo segue todas.
+
+1. Nunca pegue o foco. Crie as janelas sem ativá-las (no pywebview: focus=False). Se
+   a sua janela roubar o foco, o jogo para de receber mouse e teclado.
+2. Use pixels "físicos". Ative no seu app o modo "DPI aware (per monitor v2)" e use os
+   números recebidos como vieram. Sem isso, com a escala do Windows em 125% ou 150%, a
+   janela aparece no lugar errado.
+3. Sem borda e sempre por cima, mas escondida quando outro programa está na frente:
+   compare o processo da janela da frente com gamePid e com o do seu app.
+4. No panel.hide, esconda; não feche. O conteúdo continua carregado.
+5. No window.close, feche, mesmo se a janela ainda estiver abrindo (o mouse pode sair
+   do botão antes disso).
+
+PARTE 4: TESTAR COM O APP DE EXEMPLO (PRECISA DE PYTHON)
+--------------------------------------------------------
+
+Serve para ver tudo funcionando antes de fazer o seu app.
+
+1. Instale o Python 3.10 ou mais novo (python.org). Na instalação, marque
+   "Add Python to PATH".
+2. Abra o Prompt de Comando e rode: pip install pywebview
+3. Rode: python examples\python-app\app.py e deixe essa janela aberta.
+4. Abra o perfil de um jogador no FM. O FMActionLink.json que vem no pacote coloca:
+   Search (site), Open in app (aviso ao app, também Ctrl+Shift+O), o ícone de
+   radar (prévia no hover), o ícone de cubo (3D no clique) e um espaço 3D na coluna
+   Físicos.
+5. Para experimentar as suas páginas, troque os arquivos de examples\python-app\pages, ou
+   os endereços em WINDOWS e PANELS, no começo do app.py.
+
+PARTE 5: PARA PROGRAMADORES (C#), OPCIONAL
+------------------------------------------
+
+Em vez do FMActionLink.json (ou junto com ele), um plugin BepInEx seu pode criar os
+botões por código e tratar os cliques sem app nenhum. O exemplo completo está em
+examples\csharp-extension; a referência técnica completa está no INTEGRATION.md.
+
+PARTE 6: QUANDO ALGO NÃO FUNCIONA
+---------------------------------
+
+Tudo o que o plugin faz fica anotado no arquivo BepInEx\LogOutput.log, nas linhas que
+começam com [ActionLink].
+
+  - O que acontece: Os botões não aparecem
+  - O que fazer: Veja se a pasta está em BepInEx\plugins e se o log tem [ActionLink] ... loaded.
+
+  - O que acontece: Mudei o arquivo e nada mudou
+  - O que fazer: O log deve dizer FMActionLink.json has an error: falta ou sobra vírgula ou aspas.
+
+  - O que acontece: Clico no botão do app e nada acontece
+  - O que fazer: O seu app não está aberto ou escuta outro endereço. O log diz the app is not answering at ....
+
+  - O que acontece: As janelas não aparecem por cima do jogo
+  - O que fazer: O jogo está em tela cheia exclusiva. Mude para janela ou tela cheia sem bordas.
+
+  - O que acontece: A janela aparece no lugar errado
+  - O que fazer: O seu app não está usando pixels físicos (Parte 3, regra 2).
+
+  - O que acontece: O botão diz que não achou o ID
+  - O que fazer: Ligue a opção "Show screen IDs in Title Bar to assist skinning" nas preferências do FM (Parte 1, passo 4).
+
+  - O que acontece: O espaço embutido não aparece
+  - O que fazer: Os dois textos não estão na mesma coluna, ou não sobra altura suficiente (minHeight).
+
+CONSULTA: TODAS AS OPÇÕES
+-------------------------
+
+>> O topo do arquivo
+
+  - Chave: app.eventsUrl
+  - Para que serve: Endereço do seu app, para onde vão os avisos.
+
+  - Chave: app.startIfClosed
+  - Para que serve: Caminho do .exe do seu app, aberto se ele estiver fechado num clique.
+
+  - Chave: app.startArguments
+  - Para que serve: O que passar ao .exe ao abrir.
+
+  - Chave: app.startTimeoutSeconds
+  - Para que serve: Quanto esperar o app abrir (padrão 45).
+
+  - Chave: debug.logScreenTree
+  - Para que serve: true anota no log a estrutura da tela em volta dos botões e dos espaços.
+
+>> Botões
+
+  - Chave: id
+  - Obrigatória: sim
+  - Para que serve: Nome único do botão. Vai junto nos avisos.
+
+  - Chave: label
+  - Obrigatória: não
+  - Para que serve: Texto do botão. Sem ele, vira ícone quadrado.
+
+  - Chave: icon
+  - Obrigatória: não
+  - Para que serve: Imagem PNG ou JPG, relativa à pasta do plugin.
+
+  - Chave: tooltip
+  - Obrigatória: não
+  - Para que serve: Texto ao passar o mouse.
+
+  - Chave: hotkey
+  - Obrigatória: não
+  - Para que serve: Atalho, como ctrl+shift+o ou alt+f5.
+
+  - Chave: enabled
+  - Obrigatória: não
+  - Para que serve: false desliga sem apagar.
+
+  - Chave: action.type
+  - Obrigatória: sim
+  - Para que serve: openUrl (Receita 1), runProgram (Receita 2), sendToApp (Receita 3) ou window (Receitas 4 e 5).
+
+>> Espaços embutidos
+
+  - Chave: id
+  - Para que serve: Nome único. Vai junto nos avisos.
+
+  - Chave: afterLabel / beforeLabel
+  - Para que serve: Os textos entre os quais o espaço fica (Receita 6).
+
+  - Chave: minHeight
+  - Para que serve: Altura mínima para aparecer (padrão 110).
+
+  - Chave: placeholderText
+  - Para que serve: Texto mostrado no espaço até a janela do app cobri-lo.
+
+>> Avisos que o seu app recebe
+
+Todos chegam por POST em eventsUrl, em JSON, um de cada vez e na ordem.
+
+  - event: button.click
+  - Quando: Clique num botão sendToApp
+  - Campos principais: buttonId, playerId
+
+  - event: window.open
+  - Quando: Abrir a janela de um botão window
+  - Campos principais: buttonId, playerId, mode (hover ou pinned), anchor
+
+  - event: window.pin
+  - Quando: A janela do hover virou fixa com um clique
+  - Campos principais: os mesmos de window.open
+
+  - event: window.close
+  - Quando: Fechar a janela
+  - Campos principais: buttonId, reason (mouseLeft, clickOutside, escape, clickedAgain, screenChanged)
+
+  - event: panel.show
+  - Quando: O espaço embutido apareceu, mudou ou trocou de jogador (e a cada 2 s)
+  - Campos principais: panelId, playerId, rect
+
+  - event: panel.hide
+  - Quando: O espaço saiu da vista
+  - Campos principais: panelId
+
+Todos trazem também screen (hoje sempre playerProfile) e gamePid (o processo do jogo).
+anchor e rect vêm em pixels físicos da tela: x, y, width, height.
+
+>> ID do jogador
+
+Vem de dois lugares: da foto do jogador no cabeçalho e do texto "ID: 12345678" que o jogo mostra
+quando a opção "Show screen IDs in Title Bar to assist skinning" está ligada (Parte 1, passo 4).
+Com a opção ligada funciona para todos os jogadores; desligada, só para quem tem foto. Sem ID, os
+avisos vão sem playerId e os botões que usam {playerId} não fazem nada (o log explica).
+
+>> Limites de hoje
+
+- Só o perfil do jogador; outras telas virão depois.
+- Os botões ficam ao lado da caixa de "Acções" (#FrameActions), que fica no mesmo lugar
+  nas skins. Uma skin que a renomeie esconde os botões.
+- As janelas do app ficam por cima do jogo: um menu do jogo aberto sobre o espaço embutido
+  fica atrás delas.
+- Versão 1.0, testada nas versões da Steam e da Epic.

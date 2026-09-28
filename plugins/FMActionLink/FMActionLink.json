@@ -1,0 +1,65 @@
+// FM ActionLink: what appears on the player profile and what each part does.
+// Edit with the game open: the plugin reloads this file within 2 seconds.
+// Guides: LEIA-ME.txt (Português), README.txt (English). Technical reference: INTEGRATION.md.
+{
+  // Your app. The plugin POSTs JSON events here (clicks, windows, panels).
+  "app": {
+    "eventsUrl": "http://127.0.0.1:8767/fm-events",
+    // Optional: started when a click finds the app closed (full path to the .exe).
+    "startIfClosed": "",
+    "startArguments": "",
+    "startTimeoutSeconds": 45
+  },
+
+  "playerProfile": {
+    // Shown right after "Actions", in this order.
+    "buttons": [
+      {
+        "id": "search-web",
+        "label": "Search",
+        "tooltip": "Search this player on the web",
+        "action": { "type": "openUrl", "url": "https://www.google.com/search?q=FM26+player+{playerId}" }
+      },
+      {
+        "id": "open-in-app",
+        "label": "Open in app",
+        "hotkey": "ctrl+shift+o",
+        "action": { "type": "sendToApp" }
+      },
+      {
+        "id": "quick-preview",
+        "icon": "icons/radar.png",
+        "tooltip": "Preview (rest the mouse here; click to pin)",
+        "action": { "type": "window", "openOnHover": true, "hoverDelayMs": 250 }
+      },
+      {
+        "id": "model-3d",
+        "icon": "icons/cube.png",
+        "tooltip": "3D preview",
+        "action": { "type": "window", "openOnHover": false }
+      },
+      {
+        "id": "run-program",
+        "enabled": false,
+        "label": "Notes",
+        "action": { "type": "runProgram", "path": "C:\\Windows\\notepad.exe", "arguments": "" }
+      }
+    ],
+
+    // Empty areas your app covers with a window of its own. The one below is only a
+    // suggestion to try the feature: the Physical column, above the Goalkeeping block
+    // (outfield players only).
+    "embeddedPanels": [
+      {
+        "id": "embedded-3d",
+        "afterLabel": ["Físicos", "Physical"],
+        "beforeLabel": ["Guarda-Redes", "Goleiro", "Goalkeeping", "Goalkeeper"],
+        "minHeight": 110,
+        "placeholderText": "3D"
+      }
+    ]
+  },
+
+  // true writes the structure around "Actions" and around each panel to BepInEx\LogOutput.log.
+  "debug": { "logScreenTree": false }
+}

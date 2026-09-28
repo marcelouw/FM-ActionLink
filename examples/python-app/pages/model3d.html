@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>3D preview</title>
+<!-- model-viewer shows a glTF/GLB model with orbit controls. Swap the model with ?model=... -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: #10151c; overflow: hidden; }
+  model-viewer { width: 100vw; height: 100vh; --poster-color: transparent; }
+  #player { position: fixed; left: 10px; bottom: 8px; color: #9fb3c8; font: 12px "Segoe UI", system-ui, sans-serif; pointer-events: none; }
+</style>
+</head>
+<body>
+<model-viewer id="viewer" camera-controls auto-rotate shadow-intensity="0.6" exposure="0.9" interaction-prompt="none"></model-viewer>
+<div id="player"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+  // a GLB of your own: put it in pages/ and open model3d.html?model=/pages/your-file.glb
+  document.getElementById("viewer").src = q.get("model") || "https://modelviewer.dev/shared-assets/models/Astronaut.glb";
+  if (!q.has("embedded")) document.getElementById("player").textContent = q.get("playerId") ? `Player ${q.get("playerId")}` : "";
+</script>
+</body>
+</html>

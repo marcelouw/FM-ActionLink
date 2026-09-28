@@ -1,0 +1,205 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FMActionLink</name>
+    </assembly>
+    <members>
+        <member name="T:FMActionLink.ActionLink">
+            <summary>
+            Entry point for other BepInEx plugins. Add buttons and panels from your plugin's Load()
+            (declare [BepInDependency(Plugin.Guid)] so this plugin loads first). Everything you add
+            shows up the next time the screen is built; nothing needs the game to restart.
+            Callbacks run on the game's main thread: keep them short and move any I/O to Task.Run.
+            </summary>
+        </member>
+        <member name="M:FMActionLink.ActionLink.SendToApp(FMActionLink.AppEvent,System.Boolean)">
+            Sends an event to the app configured in FMActionLink.json ("app.eventsUrl"). This is
+            what buttons and panels without their own callbacks do by default.
+        </member>
+        <member name="T:FMActionLink.ScreenRegistry">
+            The buttons and panels of one game screen, in the order they were added.
+        </member>
+        <member name="P:FMActionLink.ScreenRegistry.Revision">
+            Goes up on every change, so the screen watcher knows it must rebuild.
+        </member>
+        <member name="T:FMActionLink.PlayerContext">
+            What the plugin knows about the screen when something happens.
+        </member>
+        <member name="P:FMActionLink.PlayerContext.PlayerId">
+            The player's unique ID, read from the "ID: n" text in the profile header.
+            Null when the header does not show it (see the guide: "Player ID").
+        </member>
+        <member name="T:FMActionLink.ScreenRect">
+            A rectangle in Windows screen pixels (physical pixels, top-left origin), ready to
+            position a window of your own.
+        </member>
+        <member name="M:FMActionLink.ScreenRect.#ctor(System.Int32,System.Int32,System.Int32,System.Int32)">
+            A rectangle in Windows screen pixels (physical pixels, top-left origin), ready to
+            position a window of your own.
+        </member>
+        <member name="P:FMActionLink.GameButton.Label">
+            Text on the button. Leave empty for an icon-only square button.
+        </member>
+        <member name="P:FMActionLink.GameButton.IconPath">
+            PNG file (absolute, or relative to the plugin folder). Optional.
+        </member>
+        <member name="P:FMActionLink.GameButton.Hotkey">
+            Optional keyboard shortcut, e.g. "ctrl+shift+p". Works while the screen is open.
+        </member>
+        <member name="T:FMActionLink.ActionButton">
+            A plain button: one click, one action.
+        </member>
+        <member name="T:FMActionLink.WindowButton">
+            A button that stands for a window of your app shown over the game (a preview, a 3D
+            view...). The plugin never draws that window: it tells you when to open, pin and close
+            it, and where the button is, so your app positions its own window.
+            Rules: with OpenOnHover, resting the mouse on the button opens (Hover) and leaving closes;
+            a click pins it (Pinned) until a click elsewhere in the game, Esc, a second click on the
+            button, or leaving the screen.
+        </member>
+        <member name="P:FMActionLink.WindowButton.OnOpen">
+            Default (null): sends "window.open" to your app.
+        </member>
+        <member name="P:FMActionLink.WindowButton.OnPin">
+            Default (null): sends "window.pin" to your app (a hover window became pinned).
+        </member>
+        <member name="P:FMActionLink.WindowButton.OnClose">
+            Default (null): sends "window.close" to your app.
+        </member>
+        <member name="P:FMActionLink.WindowRequest.Anchor">
+            Where the button is on screen: open your window next to it.
+        </member>
+        <member name="P:FMActionLink.WindowRequest.GameProcessId">
+            The game's process: hide your window whenever another process is in front.
+        </member>
+        <member name="T:FMActionLink.EmbeddedPanel">
+            An empty area the plugin adds to the screen, for your app to cover with a window of its
+            own (a 3D view, a chart, an image...). The plugin keeps reporting where it is.
+            It is placed between two text labels of the screen that sit in the same column: below
+            the one in AfterLabel and above the one in BeforeLabel (any of the given translations).
+        </member>
+        <member name="P:FMActionLink.EmbeddedPanel.PlaceholderText">
+            Shown inside the area until your window covers it. Optional.
+        </member>
+        <member name="P:FMActionLink.EmbeddedPanel.OnShow">
+            Called when the area appears, moves, changes size or shows another player, and again
+            every 2 s while it stays still. Default (null): sends "panel.show" to your app.
+        </member>
+        <member name="P:FMActionLink.EmbeddedPanel.OnHide">
+            Called when the area stops being visible (other tab, other screen, game minimized).
+            Default (null): sends "panel.hide" to your app.
+        </member>
+        <member name="T:FMActionLink.AppEvent">
+            One message to your app, posted as JSON to "app.eventsUrl". See the guide for every
+            event and field.
+        </member>
+        <member name="T:FMActionLink.AppLink">
+            <summary>
+            Posts events to the creator's app, one at a time and in order (a "close" must never
+            overtake the "open" before it). When a click finds the app closed and "startIfClosed" is
+            set, starts it and keeps retrying the latest click until it answers.
+            </summary>
+        </member>
+        <member name="T:FMActionLink.ConfigFile">
+            <summary>
+            Reads FMActionLink.json (next to the DLL) into the same registry that code uses, and
+            reads it again whenever the file changes, so a creator can edit it with the game open.
+            </summary>
+        </member>
+        <member name="M:FMActionLink.ConfigFile.TryFill(System.String,FMActionLink.PlayerContext,System.String@)">
+            {playerId} in a URL, path or arguments. Without an ID the action is skipped rather
+            than opening a broken address.
+        </member>
+        <member name="T:FMActionLink.GameUi">
+            Helpers to walk the game's UI Toolkit tree and convert its positions to screen pixels.
+        </member>
+        <member name="M:FMActionLink.GameUi.Describe(UnityEngine.UIElements.VisualElement)">
+            One line for the log: type, name, classes, size and text.
+        </member>
+        <member name="M:FMActionLink.GameUi.IsShown(UnityEngine.UIElements.VisualElement)">
+            False when the element or any parent is hidden (other tab, closing screen...).
+        </member>
+        <member name="M:FMActionLink.GameUi.ScreenRectOf(UnityEngine.UIElements.VisualElement)">
+            The element's box in Windows screen pixels. UI Toolkit works in its own "panel"
+            units (scaled by the game's UI zoom); Unity's screen is the game window's client area.
+        </member>
+        <member name="M:FMActionLink.GameUi.LoadIcon(System.String)">
+            A PNG from disk, loaded once. Relative paths start at the plugin folder.
+        </member>
+        <member name="T:FMActionLink.OutsideGame">
+            <summary>
+            Starts programs and addresses outside the game's process group. Started directly by
+            fm.exe they become its children, and Steam keeps showing the game as running after it
+            closes, until those programs close too.
+            </summary>
+        </member>
+        <member name="M:FMActionLink.OutsideGame.Open(System.String)">
+            A program without arguments, a document or an http(s) address: the Windows shell
+            (explorer) opens it as if the user had double-clicked it.
+        </member>
+        <member name="M:FMActionLink.OutsideGame.Run(System.String,System.String)">
+            A program with arguments: explorer cannot pass them, so the Windows process service
+            (WMI Win32_Process.Create) starts it; its parent is the WMI host, not the game.
+        </member>
+        <member name="T:FMActionLink.PlayerProfileWatcher">
+            <summary>
+            Watches for the player profile screen, puts the registered buttons right after
+            "Actions" (the #FrameActions box keeps its place in every skin) and the embedded panels
+            between their labels, then follows the mouse, the keyboard and the panels' positions.
+            </summary>
+        </member>
+        <member name="M:FMActionLink.PlayerProfileWatcher.PlayerIdFromPhoto(UnityEngine.UIElements.VisualElement,UnityEngine.UIElements.VisualElement)">
+            Climbing from "Actions", the first game picture whose key has "person/{id}": the
+            header photo, not another person further away on the screen.
+        </member>
+        <member name="M:FMActionLink.PlayerProfileWatcher.ReadPlayerId(UnityEngine.UIElements.VisualElement)">
+            The "ID: 12345678" text of the profile header: first in the screen's own tree, then in
+            every other one (some game versions draw the header in a separate document).
+        </member>
+        <member name="M:FMActionLink.PlayerProfileWatcher.LogIdCandidates">
+            Once per session: the texts that look like an ID, so a new header format can be
+            recognised from a single log.
+        </member>
+        <member name="M:FMActionLink.PlayerProfileWatcher.CreateButton(FMActionLink.GameButton,UnityEngine.UIElements.VisualElement,System.Action)">
+            Looks like the game's own "Actions" button: same style classes on the button and on
+            its text, so any skin that restyles "Actions" restyles these too.
+        </member>
+        <member name="M:FMActionLink.PlayerProfileWatcher.InsertPanel(FMActionLink.EmbeddedPanel,UnityEngine.UIElements.VisualElement)">
+            Between the two labels, only when they are stacked in the same column. Labels side
+            by side (the goalkeeper profile puts "Goalkeeping" in a column of its own) are skipped.
+        </member>
+        <member name="M:FMActionLink.PlayerProfileWatcher.CommonAncestor(UnityEngine.UIElements.VisualElement,UnityEngine.UIElements.VisualElement,System.Int32)">
+            The closest element containing both, plus the child of it on the way to each.
+        </member>
+        <member name="T:FMActionLink.Hotkey">
+            "ctrl+shift+p", "alt+f5"... The last part is a key name from Unity's Input System.
+        </member>
+        <member name="T:FMActionLink.Plugin">
+            <summary>
+            Buttons and embedded panels on Football Manager 26 screens, for creators whose apps
+            live outside the game. Configure them in FMActionLink.json, or from another plugin
+            through <see cref="T:FMActionLink.ActionLink"/>. Technical reference: INTEGRATION.md.
+            </summary>
+        </member>
+        <member name="T:FMActionLink.SharedRow">
+            <summary>
+            One row next to the game's "Actions" button, shared by every plugin that adds buttons there
+            (this one, FM ActionLink - FMSH, any other). Each plugin keeps its buttons in a group of its
+            own inside the row; groups are named "actionlink-group-NNN-name" and always kept sorted by
+            name, so NNN decides the order whoever loads first (FMSH is 000: always first).
+            The row's name and the group naming are the whole agreement: plugins never reference each
+            other, and each carries its own copy of this code.
+            </summary>
+        </member>
+        <member name="M:FMActionLink.SharedRow.Place(UnityEngine.UIElements.VisualElement,UnityEngine.UIElements.VisualElement,UnityEngine.UIElements.VisualElement)">
+            Puts the group in the row (created right after "Actions" if missing), replacing an older
+            group of the same name, and sorts the row.
+        </member>
+        <member name="M:FMActionLink.SharedRow.Remove(UnityEngine.UIElements.VisualElement)">
+            Takes the group out, and the row with it when nobody else is left in it.
+        </member>
+        <member name="M:FMActionLink.SharedRow.IsOurs(UnityEngine.UIElements.VisualElement)">
+            Whether this element is the row or one of its groups (never the game's "Actions").
+        </member>
+    </members>
+</doc>

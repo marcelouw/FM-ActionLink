@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Example app</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d1117; color: #e6ebf1; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  main { padding: 32px 40px; }
+  h1 { margin: 0 0 8px; }
+  p { color: #9fb3c8; max-width: 60ch; }
+  code { color: #e9c46a; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Player</h1>
+  <p>A "sendToApp" button was clicked in the game. A real app would now show this player. This page is <code>pages/player.html</code> of the example app.</p>
+</main>
+<script>
+  const id = new URLSearchParams(location.search).get("playerId");
+  document.getElementById("title").textContent = id ? `Player ${id}` : "Player ID not shown in the game";
+</script>
+</body>
+</html>
